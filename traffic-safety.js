@@ -1,0 +1,14 @@
+import {poseAt,vehiclePolygon,footprintSamples,polygonOverlap,distancePolygon} from './site-geometry.js?v=7f';
+export function createTrafficSafety({vehicles,roadNetwork,polygons=[],circles=[],onStatus=()=>{}}){
+ const shapes=polygons.map(p=>({points:p,minX:Math.min(...p.map(p=>p[0])),maxX:Math.max(...p.map(p=>p[0])),minZ:Math.min(...p.map(p=>p[1])),maxZ:Math.max(...p.map(p=>p[1]))}));
+ function staticClear(poly){const minX=Math.min(...poly.map(p=>p[0])),maxX=Math.max(...poly.map(p=>p[0])),minZ=Math.min(...poly.map(p=>p[1])),maxZ=Math.max(...poly.map(p=>p[1]));for(const s of shapes){if(maxX<s.minX||minX>s.maxX||maxZ<s.minZ||minZ>s.maxZ)continue;if(polygonOverlap(poly,s.points))return false;}for(const c of circles){if(c.center[0]+c.radius<minX||c.center[0]-c.radius>maxX||c.center[1]+c.radius<minZ||c.center[1]-c.radius>maxZ)continue;if(distancePolygon(c.center,poly)<c.radius)return false;}return true;}
+ let audit={samples:0,collisions:[]};for(const [index,v]of vehicles.entries()){for(let distance=0;distance<v.len;distance+=.45){const pose=poseAt(v.route,distance,v.len),body=vehiclePolygon(pose,v.bodyLength);audit.samples++;if(!staticClear(body)||footprintSamples(body).some(p=>!roadNetwork.onRoad(p))){audit.collisions.push({vehicle:index,distance:Math.round(distance),x:+pose.point.x.toFixed(2),z:+pose.point.z.toFixed(2)});if(audit.collisions.length>20)break;}}}
+ onStatus(audit);let holds=0;
+ return {audit,staticClear,advance(car,dt,{enabled,gates,people=[]}){let speed=enabled?car.speed:0;const current=poseAt(car.route,car.distance,car.len),next=poseAt(car.route,car.distance+dt*speed,car.len);for(const other of vehicles){if(car===other)continue;const there=poseAt(other.route,other.distance,other.len),dx=there.point.x-current.point.x,dz=there.point.z-current.point.z,ahead=dx*current.tangent.x+dz*current.tangent.z,lateral=Math.abs(dx*current.tangent.z-dz*current.tangent.x);if(ahead>0&&ahead<12&&lateral<2.1)speed=Math.min(speed,Math.max(0,(ahead-(car.bodyLength+other.bodyLength)/2-1.5)*.8));}
+  for(const gate of gates){const dx=gate.x-current.point.x,dz=gate.z-current.point.z;if(dx*current.tangent.x+dz*current.tangent.z>0&&Math.hypot(dx,dz)<7&&Math.abs(current.point.z-gate.z)<4&&Math.abs(current.tangent.x)>.5&&gate.angle<1.2)speed=0;}
+  const proposed=poseAt(car.route,car.distance+dt*speed,car.len),body=vehiclePolygon(proposed,car.bodyLength);let clear=staticClear(body);for(const other of vehicles){if(other===car)continue;const otherBody=vehiclePolygon(poseAt(other.route,other.distance,other.len),other.bodyLength);if(polygonOverlap(body,otherBody))clear=false;}for(const p of people)if(distancePolygon(p,body)<.65)clear=false;
+  if(clear)car.distance=(car.distance+dt*speed)%car.len;else holds++;const pose=poseAt(car.route,car.distance,car.len);car.g.position.copy(pose.point);car.g.rotation.y=Math.atan2(-pose.tangent.x,-pose.tangent.z);car.wheels.forEach(w=>w.rotation.x=car.distance/.34);
+ },get holds(){return holds;}};
+}
+
+
