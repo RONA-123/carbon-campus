@@ -1,0 +1,14 @@
+三方案比选 · GitHub Pages 上传说明
+
+1. 解压 GitHub-comparison.zip。
+2. 在已登录的浏览器打开 https://github.com/RONA-123/carbon-campus 。
+3. 确认当前文件列表是 Pages 发布目录：若 Settings > Pages 的发布目录为 /docs，请先进入 docs；若为 /(root)，直接停留仓库根目录。
+4. Add file > Upload files，把本包中的 comparison 文件夹整体拖入上传区域。
+5. 确认列表中有 comparison/index.html、comparison/assets/three.module.js 等路径，再点击 Commit changes。
+6. 保留原有文件和 Pages 设置。Custom domain 留空，不填 github.io 路径。
+7. 等待 Pages 部署成功后，打开 https://rona-123.github.io/carbon-campus/comparison/ 。
+
+请上传解压后的文件夹，不要直接上传 ZIP。comparison 内有 24 个文件，约 8.0 MB。
+如现有 Pages 使用 GitHub Actions，必须确保工作流将 comparison 一并复制到部署产物中；仅上传源码目录未必会发布。此时请提供 Pages 设置或工作流内容以便适配。
+包内 .nojekyll 可放发布根目录（若已经有则保留现有即可）。
+本包包含原图、材质及 Three.js 本地依赖。当前仅已完成打包，未上传或验证公网发布。
